@@ -1,6 +1,6 @@
 --- 
-title: "Final Project-Group 04"
-author: "Shakib-241001661,Shudeshna-241000261,Mithun-241002261,Pradipto-241002161,Mufrad-241001461,Shahriar Islam-241000461"
+title: "Bitcoin price prediction with ARIMA"
+author: "Mohammed Amimul Ehasan Shakib"
 date: "`r Sys.Date()`"
 site: bookdown::bookdown_site
 output: bookdown::gitbook
