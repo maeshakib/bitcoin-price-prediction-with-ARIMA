@@ -1,0 +1,414 @@
+# Regression Analysis
+
+
+### Linear Regression 
+  
+
+```{r, echo=FALSE}
+
+#Load library
+library(tidyverse)
+#load csv from github(uploaded for Assignment_02_Group_04)
+BitCoin <- read.csv("https://raw.githubusercontent.com/shakibed/Final_Project_Group_04/main/BTC-Monthly.csv", stringsAsFactors = FALSE)
+
+BitCoin$Date <- as.Date(BitCoin$Date)
+
+#it shows no missing value found
+# Copy the bitcoin data frame to a new data frame named BitCoin_df
+BitCoin_df<- BitCoin
+
+
+# Create 'month' and 'year' columns in the BitCoin_df data frame
+BitCoin_df <- BitCoin_df %>%
+  mutate(
+    month = format(Date, "%m"),
+    year = format(Date, "%Y")
+  )
+
+
+```
+ 
+  - Create a linear model of the time series dataset.
+  - Show the summary of the model and explain the outcome.
+  - Create a plot of the linear model on top of the time series dataset line plot with scatter data points.
+  - Perform residual analysis and create a line & scatter plot of the residuals. Explain the outcome.
+  - Create a histogram plot of the residuals. Explain the outcome.
+  - Create ACF & PACF plots of residuals. Explain the outcome.
+  - Create QQ plot of residuals. Explain the outcome.
+  - Perform Shapiro-Wilk test on residuals. Explain the outcome.
+  - Explain if linear model is appropriate or not.
+
+  
+ 
+#### Create a linear model of the time series dataset.
+
+
+```{r}
+# Convert Date to numeric format for linear modeling
+BitCoin_df <- BitCoin_df %>%
+mutate(Date_numeric = as.numeric(Date))
+
+# Fit the linear model
+linear_model <- lm(Close ~ Date_numeric, data = BitCoin_df)
+#y=mx+c
+#close price = m*numeric date + c
+
+```
+
+_**Code explanation here**_
+The linear model predicts Bitcoin's closing price based on the date. The slope shows the price change rate over time, and the intercept represents the initial price at the start date.
+
+
+#### Show the summary of the model and explain the outcome. 
+```{r}
+summary(linear_model)
+```
+_**In Summary**_
+
+- The model indicates a statistically significant relationship between the date and the closing price of Bitcoin, as shown by the very small p-value (< 2.2e-16).
+- The date explains about 58.6% of the variation in closing prices, as reflected by the Multiple R-squared and Adjusted R-squared values.
+- The average prediction error is approximately 10430, as indicated by the Residual Standard Error.
+- For each unit increase in the numeric date, the closing price of Bitcoin rises by about 13.08 units, which is determined by the slope of the regression line.
+
+
+
+
+
+```{r}
+
+
+# Create a new column with fitted values
+BitCoin_df <- BitCoin_df %>%
+mutate(Fitted_Close = predict(linear_model))
+
+# Plot the original data and the linear model
+
+ggplot(BitCoin_df, aes(x = Date)) +
+geom_point(aes(y = Close, color = "Original Data")) +  # Original data points
+geom_line(aes(y = Fitted_Close, color = "Fitted Line")) +  # Fitted line
+labs(title = "Linear Model of Bitcoin Prices Over Time",
+     x = "Date",
+     y = "Close Price",
+     color = "Legend") +  # Add a label to the legend
+theme_minimal() +
+scale_color_manual(values = c("Original Data" = "blue", "Fitted Line" = "red"))  # Specify colors
+
+
+
+```
+
+_**Code explanation here**_
+
+The provided graph and summary show a linear regression model of Bitcoin prices over time. The blue points represent the original data, while the red line represents the fitted linear model. 
+
+#### Create a plot of the linear model on top of the time series dataset line plot with scatter data points. 
+
+
+```{r}
+#Create a plot of the linear model on top of the time series dataset line plot with scatter data points.
+  
+#Plot the original data, the time series line, and the linear model
+ggplot(BitCoin_df, aes(x = Date)) +
+geom_point(aes(y = Close), color = "blue") +  # Original data points
+geom_line(aes(y = Close), color = "blue", linetype = "dashed") +  # Time series line
+geom_line(aes(y = Fitted_Close), color = "red") +  # Fitted linear model line
+labs(title = "Time Series of Bitcoin Prices with Linear Model",
+     x = "Date",
+     y = "Close Price") +
+theme_minimal() 
+
+```
+
+
+_**Code explanation here**_
+The graph shows Bitcoin prices over time with blue dots representing the original data points and a blue dashed line representing the time series trend. The red line indicates the fitted linear model. The linear model captures the general upward trend but misses some of the more volatile fluctuations in Bitcoin prices.
+
+
+
+#### Perform residual analysis 
+```{r}
+ 
+ 
+#Calculate residuals
+BitCoin_df <- BitCoin_df %>%
+mutate(Residuals = Close - Fitted_Close)
+
+#residual calcultion in different way
+#res_dual_values <- residuals(linear_model)
+#summary(res_dual_values)
+
+ 
+```
+
+_**Code explanation here**_
+
+ Residuals are calculated to assess model fit. The dataset includes date, closing price, month, year, numeric date, fitted close values, and residuals for verification.
+
+
+#### Perform residual analysis and create a line & scatter plot of the 
+
+
+```{r}
+
+
+# Plot the residuals: Line plot
+ggplot(BitCoin_df, aes(x = Date, y = Residuals)) +
+  geom_line(color = "blue") +
+  labs(title = "Line Plot of Residuals over Time",
+       x = "Date",
+       y = "Residuals") +
+  theme_minimal()
+
+
+
+```
+
+_**Code explanation here**_
+The graph shows a blue line plotting the difference between actual values and predicted values for a Bitcoin data set, over time. Basically, it shows how much the actual Bitcoin values differed from what a model predicted on certain dates.
+
+
+#### Residual analysis  scatter plot 
+
+```{r}
+# Plot the residuals: Scatter plot
+ggplot(BitCoin_df, aes(x = Fitted_Close, y = Residuals)) +
+  geom_point(color = "blue") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Scatter Plot of Residuals",
+       x = "Fitted Close Price",
+       y = "Residuals") +
+  theme_minimal()
+
+
+```
+
+_**Code explanation here**_
+
+This graph shows blue dots representing the difference between actual Bitcoin closing prices and what a model predicted. The horizontal red line represents perfect predictions (no difference). Scattered points around the line indicate the model's accuracy - ideally, the dots would be random with no clear pattern.
+
+#### Summary of Residual analysis 
+```{r}
+# Summary statistics of the residuals
+summary(BitCoin_df$Residuals)  
+```
+
+_**Code explanation here**_
+
+The summary statistics of the residuals provide insight into the accuracy of the linear model's predictions for Bitcoin closing prices. The residuals range from -15,114 to 35,626, indicating the model sometimes significantly underestimates or overestimates the actual prices. The median residual of -2,255 suggests that half of the predictions are off by less than this amount. The mean residual is 0, indicating that, on average, the model's predictions are unbiased. The first and third quartiles (-7,997 and 3,065) show that 50% of the residuals fall within this range, highlighting the variability in prediction accuracy.
+
+
+#### Create a histogram plot of the residuals. Explain the outcome. 
+
+
+```{r}
+#Create a histogram plot of the residuals. Explain the outcome.
+  # Plot the histogram of residuals
+  ggplot(BitCoin_df, aes(x = Residuals)) +
+  geom_histogram(binwidth = 500, color = "black", fill = "blue", alpha = 0.7) +
+  labs(title = "Histogram of Residuals",
+       x = "Residuals",
+       y = "Frequency") +
+  theme_minimal()
+
+
+
+```
+
+_**Code explanation here**_
+
+ Ideally, the residuals should be normally distributed (bell-shaped curve centered around zero). 
+ The histogram here shows some deviation from normality, indicating that the model may not perfectly capture the data distribution.
+
+#### Create a histogram plot of the residuals with 
+
+```{r}
+# Overlay a normal distribution curve on the histogram
+ggplot(BitCoin_df, aes(x = Residuals)) +
+  geom_histogram(aes(y = ..density..), binwidth = 500, color = "black", fill = "blue", alpha = 0.7) +
+  stat_function(fun = dnorm, args = list(mean = mean(BitCoin_df$Residuals), sd = sd(BitCoin_df$Residuals)), color = "red", size = 1) +
+  labs(title = "Histogram of Residuals with Normal Curve",
+       x = "Residuals",
+       y = "Density") +
+  theme_minimal()
+```
+
+_**code explanation here**_
+
+This graph shows a histogram of prediction errors (residuals) for Bitcoin prices with a normal distribution curve overlaid in red. The bars represent the frequency of errors in different price ranges. Ideally, the bars would closely match the smooth red curve, indicating the errors follow a normal distribution. By comparing their shapes, we can assess how close the actual errors are to being normally distributed.
+
+
+#### Create ACF & PACF plots of residuals.Explain the outcome. 
+
+
+```{r}
+
+acf(BitCoin_df$Residuals, main = "ACF of Residuals")
+
+
+
+```
+
+
+_**Code explanation here**_
+In this plot, the residuals have significant autocorrelations up to around lag 5. This suggests that the residuals are not purely random and that there is some pattern left unexplained by the model.
+
+
+```{r}
+pacf(BitCoin_df$Residuals, main = "PACF of Residuals")  
+
+```
+
+In a well-fitted model, the PACF should show no significant partial autocorrelation beyond the first few lags.
+This plot shows a significant partial autocorrelation at lag 1 and some minor significant lags afterward, suggesting that there might be some remaining structure in the residuals.
+
+These analyses suggest that the linear regression model may not be the best fit for this time series data, and a more complex model may be needed to better capture the underlying patterns and trends in Bitcoin prices.
+
+
+
+
+
+
+
+#### Create QQ plot of residuals. Explain the outcome. 
+
+
+```{r}
+# QQ plot of residuals
+qqnorm(BitCoin_df$Residuals)
+qqline(BitCoin_df$Residuals, col = "red")
+
+```
+
+_**Code explanation here**_
+
+- The residuals do not follow a normal distribution, as indicated by the significant deviations in the tails.
+- Since many statistical methods (like linear regression) assume normally distributed residuals, the non-normality observed here indicates that the model assumptions are violated.
+
+
+#### Perform Shapiro-Wilk test on residuals. Explain the outcome. 
+
+
+```{r}
+#Perform Shapiro-Wilk test on residuals. Explain the outcome.  
+
+# Perform Shapiro-Wilk test on residuals
+shapiro_test <- shapiro.test(BitCoin_df$Residuals)
+
+# Print the result of the Shapiro-Wilk test
+print(shapiro_test)
+
+
+
+```
+
+_**Code explanation here**_
+
+The Shapiro-Wilk test assesses the normality of residuals. The test statistic 
+𝑊
+W is 0.85983, and the p-value is 1.215e-08, which is much less than 0.05. This indicates that the residuals are not normally distributed,
+
+
+#### Explain if linear model is appropriate or not. 
+
+
+```{r}
+
+
+
+```
+
+_**Code explanation here**_
+The linear regression model is not a suitable choice for Bitcoin price forecasting. The model explains about 58.6% of the variation in closing Bitcoin prices, as indicated by the Multiple R-squared and Adjusted R-squared values of Linear Model.
+
+With some Residual Analysis we also get same indication:
+
+- ACF test of Residuals:
+  - The ACF plot of residuals shows significant autocorrelations up to around lag 5.
+  This suggests that the residuals are not purely random and that some patterns remain unexplained by the model.
+
+- PACF test of Residuals:
+  - In a well-fitted model, the PACF should show no significant partial autocorrelation beyond the first few lags.
+  -The PACF plot shows a significant partial autocorrelation at lag 1 and some minor significant lags afterward, indicating remaining structure in the residuals.
+
+- QQ Plot:
+  -The QQ plot reveals that the residuals do not follow a normal distribution, as evidenced by significant deviations in the tails.
+
+- Shapiro-Wilk Test:
+  - The Shapiro-Wilk test yields a p-value of 1.215e-08, indicating that the residuals are not normally distributed.
+  
+The residuals exhibit significant autocorrelation and non-normality, confirming that the linear regression model is not capturing all the patterns in the data.
+
+
+### Quadratic Regression
+
+  - Create a quadratic model of the time series dataset.
+  - Show the summary of the model and explain the outcome.
+  - Explain if quadratic model is appropriate or not.
+
+
+ 
+#### Create a quadratic model of the time series dataset 
+
+
+```{r}
+# Create the quadratic term for the date
+BitCoin_df <- BitCoin_df %>%
+  mutate(Date_numeric = as.numeric(Date),
+         Date_numeric2 = Date_numeric^2)
+view(BitCoin_df)
+# Fit the quadratic model
+quadratic_model <- lm(Close ~ Date_numeric + Date_numeric2, data = BitCoin_df)
+
+
+```
+
+_**Code explanation here**_
+
+The dataset is enhanced by adding a squared numeric date column to capture non-linear trends. A quadratic regression model is then fitted with closing price as the dependent variable and both the numeric date and its square as independent variables. This model aims to better capture the relationship between time and Bitcoin closing prices by accounting for potential quadratic effects.
+
+
+ 
+#### Show the summary of the model and explain the outcome. 
+
+
+```{r}
+summary(quadratic_model)
+
+
+```
+
+_**Code explanation here**_
+
+  - Coefficients:
+    - the coefficients for Date_numeric and Date_numeric^2 are not statistically significant (p-values > 0.05). This suggests that neither the linear nor the quadratic term significantly predicts the closing price of Bitcoin.
+Model Fit:
+  - The R-squared value of 0.5885 indicates that the model explains about 58.85% of the variance in Bitcoin's closing prices. This is a moderate level of explanation.
+The significant F-statistic indicates that the model as a whole is statistically significant, even though individual predictors are not.
+
+In the context of financial markets and Bitcoin price forecasting, a model explaining 58% of the variance can be seen as relatively decent, given the high volatility and complexity of financial data.
+
+#### Explain if quadratic model is appropriate or not. 
+
+
+```{r}
+
+# Create a new column with the fitted values from the quadratic model
+BitCoin_df <- BitCoin_df %>%
+  mutate(Fitted_Close_Quadratic = predict(quadratic_model))
+
+# Plot the original data, the linear model, and the quadratic model
+ggplot(BitCoin_df, aes(x = Date)) +
+  geom_point(aes(y = Close), color = "blue") +  # Original data points
+  geom_line(aes(y = Fitted_Close), color = "red", linetype = "dashed") +  # Fitted linear model line
+  geom_line(aes(y = Fitted_Close_Quadratic), color = "green") +  # Fitted quadratic model line
+  labs(title = "Time Series of Bitcoin Prices with Linear and Quadratic Models",
+       x = "Date",
+       y = "Close Price") +
+  theme_minimal()
+summary(BitCoin_df$Fitted_Close_Quadratic)
+
+```
+
+_**Code explanation here**_
+
+The quadratic model shows some ability to explain the variance in Bitcoin's closing prices, but the lack of significance in the individual coefficients suggests that it might not be the best fit. Additional predictors or a different modeling approach (e.g., non-linear models, time series models) might be needed to better capture the underlying patterns in the data.
